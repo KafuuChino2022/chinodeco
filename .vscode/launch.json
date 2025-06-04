@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Example",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/examples/main.py",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "console": "integratedTerminal"
+    }
+  ]
+}
