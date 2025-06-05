@@ -27,3 +27,12 @@
                                                错误信息更清晰，明确提示位置越界、参数缺失或类型不匹配等问题
 
 > 本版本提升了装饰器的可组合性与调用灵活性，为后续 DSL 功能扩展打下基础。
+
+## [0.0.3] - 2025-06-05
+### Added
+- `chinodeco.debug.debug`：新增错误抑制型装饰器，防止可调用对象抛出异常中断程序，默认打印错误信息。
+- `chinodeco.debug.DEBUG`：新增调试模式全局开关，与 `when` 配合控制行为； `_DEBUG_VERBOSE` 控制调试信息详细程度。
+- `chinodeco.debug.errors`：新增三种异常类型 `UnknownCommandError`、`UnknownParameterError`、`ArgumentCountError`，并导出至 `chinodeco.debug`。
+- `chinodeco.decodsl.CommandDispatcher`：命令分发器类，支持注册命令并基于命令字符串执行函数，支持位置参数、短选项和键值对参数格式。
+
+> DEBUG与_DEBUG_VERBOSE默认情况下都为False

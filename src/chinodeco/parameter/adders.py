@@ -1,12 +1,12 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
+import inspect
+from functools import wraps
 from typing import (
     Callable,
     Any
 )
-from functools import wraps
-import inspect
 
 def addprefix(*add_args:tuple[str | list, str]) -> Callable:
     """
@@ -39,9 +39,11 @@ def addprefix(*add_args:tuple[str | list, str]) -> Callable:
                         param_name = list(sig.parameters)[key]
                         bound.arguments[param_name] = prefix + bound.arguments[param_name]
                     except IndexError:
-                        raise IndexError(f"[chinodeco.parameter.addprefix] Positional index {key} out of range.")
+                        frame = inspect.currentframe()
+                        raise IndexError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Positional index {key} out of range.")
                     except TypeError:
-                        raise TypeError(f"[chinodeco.parameter.addprefix] Cannot add prefix to non-concatenable type at index {key}.")
+                        frame = inspect.currentframe()
+                        raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Cannot add prefix to non-concatenable type at index {key}.")
 
                 # by key
                 elif isinstance(key, str):
@@ -49,11 +51,14 @@ def addprefix(*add_args:tuple[str | list, str]) -> Callable:
                         try:
                             bound.arguments[key] = prefix + bound.arguments[key]
                         except TypeError:
-                            raise TypeError(f"[chinodeco.parameter.addprefix] Cannot add prefix to argument '{key}'.")
+                            frame = inspect.currentframe()
+                            raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Cannot add prefix to argument '{key}'.")
                     else:
-                        raise KeyError(f"[chinodeco.parameter.addprefix] Argument '{key}' not found.")
+                        frame = inspect.currentframe()
+                        raise KeyError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Argument '{key}' not found.")
                 else:
-                    raise TypeError(f"[chinodeco.parameter.addprefix] Invalid key type: {type(key)}. Must be int or str.")
+                    frame = inspect.currentframe()
+                    raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Invalid key type: {type(key)}. Must be int or str.")
 
             return func(*bound.args, **bound.kwargs)
 
@@ -92,9 +97,11 @@ def addsuffix(*add_args:tuple[str | list, int]) -> Callable:
                         param_name = list(sig.parameters)[key]
                         bound.arguments[param_name] = bound.arguments[param_name] + suffix
                     except IndexError:
-                        raise IndexError(f"[chinodeco.parameter.addsuffix] Positional index {key} out of range.")
+                        frame = inspect.currentframe()
+                        raise IndexError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Positional index {key} out of range.")
                     except TypeError:
-                        raise TypeError(f"[chinodeco.parameter.addsuffix] Cannot add suffix to non-concatenable type at index {key}.")
+                        frame = inspect.currentframe()
+                        raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Cannot add suffix to non-concatenable type at index {key}.")
 
                 # by key
                 elif isinstance(key, str):
@@ -102,11 +109,14 @@ def addsuffix(*add_args:tuple[str | list, int]) -> Callable:
                         try:
                             bound.arguments[key] = bound.arguments[key] + suffix
                         except TypeError:
-                            raise TypeError(f"[chinodeco.parameter.addsuffix] Cannot add suffix to argument '{key}'.")
+                            frame = inspect.currentframe()
+                            raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Cannot add suffix to argument '{key}'.")
                     else:
-                        raise KeyError(f"[chinodeco.parameter.addsuffix] Argument '{key}' not found.")
+                        frame = inspect.currentframe()
+                        raise KeyError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Argument '{key}' not found.")
                 else:
-                    raise TypeError(f"[chinodeco.parameter.addsuffix] Invalid key type: {type(key)}. Must be int or str.")
+                    frame = inspect.currentframe()
+                    raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Invalid key type: {type(key)}. Must be int or str.")
 
             return func(*bound.args, **bound.kwargs)
 

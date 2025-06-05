@@ -4,3 +4,7 @@
 from .control import (
     when
 )
+
+from .registry import (
+    CommandDispatcher
+)

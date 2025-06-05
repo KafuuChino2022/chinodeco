@@ -3,10 +3,8 @@
 
 from functools import wraps
 from typing import (
-    Callable,
-    Any
+    Callable
 )
-import inspect
 
 class _when_else_chain:
     def __init__(self, condition, deco):
