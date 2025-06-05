@@ -5,6 +5,7 @@ from chinodeco import *
 from chinodeco.debug import debug
 from chinodeco.decodsl import (
     when,
+    whileloop,
     CommandDispatcher
 )
 
@@ -28,6 +29,24 @@ def hello(msg):
 def prt(message: str):
     return print(message)
 
+c = 3
+
+@whileloop(lambda: c > 0, loop_wrapper = d.register("count_c")).elsedo(
+    print, f"c is {c}"
+)
+def counter1():
+    global c
+    print(c)
+    c -= 1
+
+@whileloop(lambda: c > 0).elsedo(
+    print, f"c is {c}"
+)
+def counter2():
+    global c
+    print(c)
+    c -= 1
+
 def main():
     
     hello("你好")
@@ -36,6 +55,12 @@ def main():
     cmd = str(input(">"))
     d.run(cmd)
     print(prt.__name__)
+    
+    global c
+    counter1()
+    counter2()
+    c = 3
+    d.run(input("please enter 'count_c'\n>"))
 
 if __name__ == "__main__":
     main()

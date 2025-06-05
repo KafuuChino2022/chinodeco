@@ -24,16 +24,86 @@ class _when_else_chain:
         else:
             return func
 
+class _whileloop_else_chain:
+    def __init__(self, predicate, max_loops, deco):
+        self.__predicate = predicate
+        self.__max_loops = max_loops
+        if callable(self.__predicate) and (not isinstance(self.__max_loops, int) or self.__max_loops < 1):
+            raise ValueError(f"[{self.__module__}.{self.__qualname__}] max_loops must be a positive integer.")
+        self.__break = None
+        self.__deco = deco
+        self.__elsefunc = None
+        self.__args = ()
+        self.__kwargs = {}
+
+    def _eval_condition(self):
+        return self.__predicate() if callable(self.__predicate) else bool(self.__predicate)
+    
+    def elsedo(self, elsefunc: Callable | None = None, /, *args, **kwargs):
+        if not callable(elsefunc):
+            raise TypeError(f"[{self.elsedo.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(elsefunc)}.")
+        self.__elsefunc = elsefunc
+        self.__args = args
+        self.__kwargs = kwargs
+        return self
+    
+    def ifbreak(self, predicate: Callable | None = None):
+        self.__break = predicate
+        return self
+    
+    def __call__(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if isinstance(self.__predicate, Callable):
+                condition = self.__predicate()
+            else:
+                condition = self.__predicate
+            results = []
+            count = 0
+            if condition:
+                while condition:
+                    if self.__break() if callable(self.__break) else self.__break:
+                        break
+                    results.append(func(*args, **kwargs) if self.__deco is None else self.__deco(func)(*args, **kwargs))
+                    count += 1
+                    if isinstance(self.__predicate, Callable):
+                        condition = self.__predicate()
+                    else:
+                        if count >= self.__max_loops:
+                            break
+            elif self.__elsefunc is not None:
+                self.__elsefunc(*self.__args, **self.__kwargs)
+            return results
+        return wrapper
+
 def when(predicate: Callable[[], bool] | bool):
-    """Conditionally apply a decorator based on a condition. it will use "elsedeco" if the condition is False
+    """
+    Conditionally apply a decorator based on the evaluation of a predicate.
 
     Args:
-        condition: A zero-argument function that returns 
-            True if the decorator should be applied, or False to skip it.
-        elsedo: A decorator that it will be used when condition is False.
+        predicate: A zero-argument function returning a bool, or a bool value.
+            If True, the given decorator will be applied.
+            If False, the decorator is skipped unless an alternative is provided via `.elsedeco`.
 
     Returns:
-        Callable: A decorator that conditionally applies another decorator.
+        Callable: A decorator that applies another decorator conditionally.
+
+    Notes:
+        Use `.elsedeco(func: Callable | None = None)` to register an alternative decorator
+        that is applied when the predicate evaluates to False.
+
+    Example:
+        ```python
+        @when(lambda: some_condition)
+        def deco(func):
+            # decorator implementation
+            return func
+
+        # or with else decorator fallback
+        @when(False).elsedeco(some_other_decorator)
+        def deco(func):
+            return func
+        ```
     """
     def decorator(deco: Callable | None):
         if isinstance(predicate, Callable):
@@ -43,3 +113,35 @@ def when(predicate: Callable[[], bool] | bool):
 
         return _when_else_chain(condition, deco)
     return decorator
+
+def whileloop(predicate: Callable[[], bool] | bool, *, loop_wrapper: Callable | None = None, max_loops = 1):
+    """
+    Decorator for executing a function repeatedly while a predicate is True.
+
+    Args:
+        predicate: A condition to evaluate before each execution.
+            - If a callable is provided, it will be evaluated before every iteration.
+            - If a constant boolean is provided, loop will execute at most once or based on max_loops.
+        loop_wrapper: An optional decorator to apply to the function on **each call**.
+        max_loops: Maximum number of iterations. Defaults to 1. Ignored when predicate is callable.
+
+    Returns:
+        A decorator that wraps the target function in a controlled loop.
+
+    Notes:
+        Use `.elsedo(func, *args, **kwargs)` to register a fallback function when predicate is initially False.
+        Use `.ifbreak(predicate)` to provide a break condition during loop execution.
+        If the predicate is not callable, it's assumed to be static and won't be re-evaluated during the loop.
+        For dynamic or state-dependent conditions (e.g., involving mutable objects), wrap them in a lambda or function.
+        Use `loop_wrapper=...` to wrap the function on **each loop iteration**.
+        This differs from placing a decorator outside `@whileloop`, which wraps the whole decorated function only once.
+
+    Example:
+        ```python
+        count = 3
+        @whileloop(lambda: count > 0)
+        def task():
+            ...
+        ```
+    """
+    return _whileloop_else_chain(predicate, max_loops, loop_wrapper)

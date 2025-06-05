@@ -36,3 +36,24 @@
 - `chinodeco.decodsl.CommandDispatcher`：命令分发器类，支持注册命令并基于命令字符串执行函数，支持位置参数、短选项和键值对参数格式。
 
 > DEBUG与_DEBUG_VERBOSE默认情况下都为False
+
+## [0.0.4] - 2025-06-06
+### Added
+- `chinodeco.decodsl.whileloop`：函数循环执行装饰器，支持：
+  - 条件为 Callable 时持续判断；
+  - 条件为常量时基于 `max_loops` 限制执行次数；
+  - `.elsedo(...)`：注册条件不满足时的备用函数；
+  - `.ifbreak(...)`：提供动态中断逻辑；
+  - `loop_wrapper` 控制每次循环使用包装后的函数。
+  
+### Changed
+- `chinodeco.debug.debug`：新增 `verbose` 参数，允许用户决定是否输出完整模块路径与函数名称信息。
+
+### Enhanced
+- `chinodeco.debug.DEBUG`：扩展全局调试模式生效范围，现已覆盖所有模块中的 raise 操作；
+  若启用调试模式，所有异常将转换为错误提示输出而不中断程序执行。
+
+### Design Note
+- 当 `whileloop` 接收非 Callable 的条件时，视为不可变条件，仅执行最多 `max_loops` 次。后续版本可能补充对“可变对象”的检测支持。
+
+> 本版本引入了函数循环控制语义与更细粒度的调试输出控制机制，增强 DSL 的行为表达力与调试友好性。

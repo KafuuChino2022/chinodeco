@@ -22,9 +22,42 @@ class CommandDispatcher:
 
 class CommandDispatcher:
     def __init__(self, dispatcher: CommandDispatcher | None = None):
+        """
+        Initialize a CommandDispatcher.
+
+        Args:
+            dispatcher (CommandDispatcher, optional): If provided, inherits the command registry
+                from the given dispatcher instance. This enables command reuse or delegation across
+                multiple dispatchers.
+
+        Example:
+            # Share commands from one dispatcher to another
+            base = CommandDispatcher()
+            derived = CommandDispatcher(base)
+        """
         self.commands = {} if dispatcher is None else dispatcher.commands
     
-    def register(self, command: str, wrappers: tuple[Callable] | None = None):
+    def register(self, command: str, *wrappers: Callable):
+        """
+        Register a function as a command handler.
+
+        Args:
+            command: The command keyword that will trigger the registered function.
+            wrappers: A tuple of decorator functions to wrap the command handler.
+                These wrappers will be applied in order, allowing preprocessing like logging, validation, etc.
+
+        Returns:
+            Callable: A decorator that registers the function as a command handler.
+
+        Example:
+            @dispatcher.register("greet")
+            def greet(name):
+                print(f"Hello, {name}!")
+
+            @dispatcher.register("secure", wrappers=(auth_check,))
+            def secure_action():
+                ...
+        """
         def __wrap(func):
             wrapped = func
             if wrappers is not None:
@@ -34,6 +67,9 @@ class CommandDispatcher:
             return func
         return __wrap
     
+    @when(DEBUG)(
+        debug
+    )
     def parse_command(self, raw: str) -> tuple[str, list[str], dict[str, str | bool]]:
         """
         Parse a CLI-style command string into (command, args, kwargs).
@@ -47,7 +83,7 @@ class CommandDispatcher:
         """
         tokens = shlex.split(raw)
         if not tokens:
-            raise ValueError("Empty input")
+            raise ValueError(f"[{self.parse_command.__module__}.{self.parse_command.__qualname__}] command is empty.")
 
         command = tokens[0]
         args = []
@@ -81,6 +117,30 @@ class CommandDispatcher:
         debug
     )
     def run(self, command: str):
+        """
+        Execute a registered command with parsed arguments and keyword arguments.
+
+        This method parses the raw command string, extracts the command name,
+        positional arguments, and keyword arguments, then invokes the corresponding
+        registered function if found.
+
+        Args:
+            command: A raw command-line style string to be executed.
+                Example: `"greet hello --name Alice -v"`
+
+        Returns:
+            Any: The return value of the executed command function.
+
+        Raises:
+            UnknownCommandError: If the command name is not registered.
+            ArgumentCountError: If required positional arguments are missing.
+            UnknownParameterError: If unexpected keyword arguments are passed.
+
+        Notes:
+            - Command functions must be registered via `register(command_name)(func)` before execution.
+            - Arguments are parsed using shell-like syntax (via `shlex.split()`).
+            - Supports short flags (e.g., `-abc`), long options (`--key value`), and quoted strings.
+        """
         cmd, args, kwargs = self.parse_command(command)
         if cmd in self.commands:
             func = self.commands[cmd]

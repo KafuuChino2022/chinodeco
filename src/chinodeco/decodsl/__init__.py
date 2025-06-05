@@ -2,7 +2,8 @@
 # -*- coding:utf-8 -*-
 
 from .control import (
-    when
+    when,
+    whileloop
 )
 
 from .registry import (
