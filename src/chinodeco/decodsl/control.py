@@ -2,11 +2,31 @@
 # -*- coding:utf-8 -*-
 
 from functools import wraps
-from typing import Callable
+from typing import (
+    Callable,
+    Any
+)
 import inspect
 
+class _when_else_chain:
+    def __init__(self, condition, deco):
+        self.__condition = condition
+        self.__elsedc = None
+        self.__deco = deco
+    
+    def elsedeco(self, elsedc: Callable | None = None):
+        self.__elsedc = elsedc
+        return self
+    
+    def __call__(self, func):
+        if self.__condition:
+            return self.__deco(func)
+        elif self.__elsedc is not None:
+            return self.__elsedc(func)
+        else:
+            return func
 
-def when(predicate: Callable[[], bool] | bool, *, elsedeco: Callable | None = None):
+def when(predicate: Callable[[], bool] | bool):
     """Conditionally apply a decorator based on a condition. it will use "elsedeco" if the condition is False
 
     Args:
@@ -17,35 +37,11 @@ def when(predicate: Callable[[], bool] | bool, *, elsedeco: Callable | None = No
     Returns:
         Callable: A decorator that conditionally applies another decorator.
     """
-    def wrapper(deco: Callable | None):
+    def decorator(deco: Callable | None):
         if isinstance(predicate, Callable):
             condition = predicate()
         else:
             condition = predicate
-        
-        def handle_no_args_deco(target):
-            if not callable(deco):
-                raise TypeError(f"[chinodeco.decodsl.when] {deco} is not a callable decorator")
-            sig = inspect.signature(deco)
-            if len(sig.parameters) == 1:
-                return deco(target) if condition else target if elsedeco is None else elsedeco(target)
-            return deco(target) if condition else target if elsedeco is None else elsedeco(target)
 
-        def handle_args_deco(*args, **kwargs):
-            try:
-                real_decorator = deco(*args, **kwargs)
-            except Exception as e:
-                raise TypeError(f"[chinodeco.decodsl.when] Invalid decorator usage: {deco}(*{args}, **{kwargs}) failed: {e}")
-
-            @wraps(real_decorator)
-            def wrapped_decorator(func):
-                return real_decorator(func) if condition else func if elsedeco is None else elsedeco(func)
-            return wrapped_decorator
-
-        def conditional(*args, **kwargs):
-            if len(args) == 1 and callable(args[0]) and not kwargs:
-                return handle_no_args_deco(args[0])
-            return handle_args_deco(*args, **kwargs)
-
-        return conditional
-    return wrapper
+        return _when_else_chain(condition, deco)
+    return decorator
