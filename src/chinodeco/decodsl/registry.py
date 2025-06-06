@@ -1,19 +1,24 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
+MODULE = "chinodeco.decodsl.registry"
+
 import shlex
 import inspect
 from typing import Callable
 
-from ..debug import (
+from ..debug.debugger import (
     DEBUG,
     debug,
+)
+
+from ..debug.errors import (
     UnknownParameterError,
     UnknownCommandError,
     ArgumentCountError
 )
 
-from ..decodsl import (
+from ..decodsl.control import (
     when
 )
 
@@ -70,7 +75,7 @@ class CommandDispatcher:
     @when(DEBUG)(
         debug
     )
-    def parse_command(self, raw: str) -> tuple[str, list[str], dict[str, str | bool]]:
+    def parse_command(self, raw: str, emptiable: bool) -> tuple[str, list[str], dict[str, str | bool]]:
         """
         Parse a CLI-style command string into (command, args, kwargs).
 
@@ -82,8 +87,10 @@ class CommandDispatcher:
         - quoted strings like "a b c"
         """
         tokens = shlex.split(raw)
-        if not tokens:
-            raise ValueError(f"[{self.parse_command.__module__}.{self.parse_command.__qualname__}] command is empty.")
+        if not tokens and emptiable:
+            return ("", [], {})
+        elif not tokens:
+            raise ValueError(f"[{self.__class__.__module__}.{self.parse_command.__qualname__}] command is empty.")
 
         command = tokens[0]
         args = []
@@ -116,7 +123,7 @@ class CommandDispatcher:
     @when(DEBUG)(
         debug
     )
-    def run(self, command: str):
+    def run(self, command: str, cmd_emptiable: bool = True):
         """
         Execute a registered command with parsed arguments and keyword arguments.
 
@@ -141,8 +148,10 @@ class CommandDispatcher:
             - Arguments are parsed using shell-like syntax (via `shlex.split()`).
             - Supports short flags (e.g., `-abc`), long options (`--key value`), and quoted strings.
         """
-        cmd, args, kwargs = self.parse_command(command)
-        if cmd in self.commands:
+        cmd, args, kwargs = self.parse_command(command, cmd_emptiable)
+        if not cmd and cmd_emptiable:
+            return None
+        elif cmd in self.commands:
             func = self.commands[cmd]
             sig = inspect.signature(func)
             try:
@@ -150,10 +159,10 @@ class CommandDispatcher:
             except TypeError as e:
                 msg = str(e)
                 if "missing" in msg or "required positional" in msg:
-                    raise ArgumentCountError(f"[{self.run.__module__}.{self.run.__qualname__}] {msg}")
+                    raise ArgumentCountError(f"[{self.__class__.__module__}.{self.run.__qualname__}] {msg}")
                 elif "unexpected keyword" in msg:
-                    raise UnknownParameterError(f"[{self.run.__module__}.{self.run.__qualname__}] {msg}")
+                    raise UnknownParameterError(f"[{self.__class__.__module__}.{self.run.__qualname__}] {msg}")
         else:
-            raise UnknownCommandError(f"[{self.run.__module__}.{self.run.__qualname__}] command '{cmd}' is not exist.")
+            raise UnknownCommandError(f"[{self.__class__.__module__}.{self.run.__qualname__}] command '{cmd}' is not exist.")
         
         return func(*args, **kwargs)

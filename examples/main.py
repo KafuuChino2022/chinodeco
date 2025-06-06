@@ -1,11 +1,21 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
-from chinodeco import *
+"""
+    仅包含0.0.5及以前的样例
+"""
+
+from chinodeco import (
+    decochain,
+    addprefix,
+    addsuffix
+)
+
 from chinodeco.debug import (
     debug,
     trycatch
 )
+
 from chinodeco.decodsl import (
     when,
     whileloop,
@@ -36,7 +46,7 @@ def prt(message: str):
 c = 3
 
 @whileloop(lambda: c > 0, loop_wrapper = d.register("count_c")).elsedo(
-    print, f"c is {c}"
+    print, f"in else"
 )
 def counter1():
     global c
@@ -71,7 +81,7 @@ def main():
     global c
     counter1()
     counter2()
-    c = 3
+    c = 4
     d.run(input("please enter 'count_c'\n>"))
     
     counter3()

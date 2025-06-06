@@ -76,3 +76,24 @@
 - 修复 `chinodeco.debug.debug` 在显式传入 `verbose` 时仍被 `_DEBUG_VERBOSE` 覆盖的 Bug；
 
 > 本版本加入了异常处理装饰器并添加了新的循环控制, 着重重写了包内的异常抛出
+
+## [0.0.6] - 2025-06-06
+### Added
+- 新增 `chinodeco.parameter.pretreat` 模块，提供三个参数预处理装饰器：
+  - `setargs`: 指定参数值
+  - `mapargs`: 映射函数到参数值
+  - `filterargs`: 筛选保留或屏蔽的参数
+- 每个模块均新增 `MODULE` 常量标明其来源模块名，方便调试和报错标识
+- 为所有子包添加 `__all__` 以显式导出子模块内容
+
+### Changed
+- `chinodeco.parameter.adders` 模块已废弃，相关逻辑合并入 `pretreat`
+- `addprefix` 与 `addsuffix` 已重构，提取内部逻辑供其他装饰器共用
+
+### Enhanced
+- 所有抛出异常的错误信息现在统一使用 `MODULE` 缩写作为前缀，减少运行时性能损耗并提高错误来源识别性
+
+### Known Issues
+- 本版本新增的装饰器与模块尚未经过实际测试，暂缺 docstring 文档，计划在下个版本中补齐
+
+> 当前版本处于功能开发阶段，尚未进入发布流程，相关 API 稳定性与接口格式仍可能调整

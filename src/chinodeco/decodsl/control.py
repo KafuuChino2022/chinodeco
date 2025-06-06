@@ -1,6 +1,8 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
+MODULE = "chinodeco.decodsl.control"
+
 import inspect
 from functools import wraps
 from typing import (
@@ -8,7 +10,7 @@ from typing import (
     Iterable
 )
 
-from ..debug import (
+from ..debug.debugger import (
     DEBUG,
     debug,
 )
@@ -53,9 +55,9 @@ class _whileloop_else_chain:
         self.__max_loops = max_loops
         if callable(self.__predicate) and (not isinstance(self.__max_loops, int) or self.__max_loops < 1):
             if DEBUG:
-                print(f"[{self.__module__}.{self.__qualname__}] max_loops must be a positive integer.")
+                print(f"[{self.__class__.__module__}.{self.__class__.__qualname__}] max_loops must be a positive integer.")
             else:
-                raise ValueError(f"[{self.__module__}.{self.__qualname__}] max_loops must be a positive integer.")
+                raise ValueError(f"[{self.__class__.__module__}.{self.__class__.__qualname__}] max_loops must be a positive integer.")
         self.__break = None
         self.__deco = deco
         self.__elsefunc = None
@@ -88,9 +90,9 @@ class _whileloop_else_chain:
         """
         if not callable(elsefunc):
             if DEBUG:
-                print(f"[{self.elsedo.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(elsefunc)}.")
+                print(f"[{self.__class__.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(elsefunc)}.")
             else:
-                raise TypeError(f"[{self.elsedo.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(elsefunc)}.")
+                raise TypeError(f"[{self.__class__.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(elsefunc)}.")
         self.__elsefunc = elsefunc
         self.__args = args
         self.__kwargs = kwargs
@@ -227,7 +229,7 @@ def foreach(iter: Iterable | None = None, *, max_loops: int = 10, loop_wrapper: 
                     results.append(loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs))
             else:
                 frame = inspect.currentframe()
-                raise TypeError(f"[{frame.f_globals["__name__"]}.foreach] Invalid iter type: {type(iter)}. Must be Iterable.")
+                raise TypeError(f"[{MODULE}.foreach] Invalid iter type: {type(iter)}. Must be Iterable.")
             return results
         return wrapper
     return decorator

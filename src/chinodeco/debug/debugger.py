@@ -1,7 +1,8 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
-import inspect
+MODULE = "chinodeco.debug.debugger"
+
 from typing import (
     Callable,
     Any
@@ -41,7 +42,7 @@ def debug(func: Callable | None = None, *, verbose = _DEBUG_VERBOSE):
             return func(*args, **kwargs)
         except Exception as e:
             if verbose:
-                print(f"[{getattr(func, "__module__", "unknown")}.{getattr(func, "__qualname__", repr(func))}] {e}")
+                print(f"[{MODULE}.{getattr(func, "__qualname__", repr(func))}] {e}")
             else:
                 print(f"{e}")
     return wrapper
@@ -67,11 +68,9 @@ def trycatch(exception: BaseException | tuple[BaseException], handler: Callable[
     """
     def decorator(func: Callable):
         if not callable(func):
-            frame = inspect.currentframe()
-            raise TypeError(f"[{frame.f_globals["__name__"]}.trycatch] Invalid func type: {type(func)}. Must be Callable.")
+            raise TypeError(f"[{MODULE}.trycatch] Invalid func type: {type(func)}. Must be Callable.")
         if not callable(func):
-            frame = inspect.currentframe()
-            raise TypeError(f"[{frame.f_globals["__name__"]}.trycatch] Invalid handler type: {type(handler)}. Must be Callable.")
+            raise TypeError(f"[{MODULE}.trycatch] Invalid handler type: {type(handler)}. Must be Callable.")
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
@@ -81,8 +80,8 @@ def trycatch(exception: BaseException | tuple[BaseException], handler: Callable[
                     return handler(e)
                 except TypeError as error:
                     if "missing" in error or "required positional" in error:
-                        raise ArgumentCountError(f"[{inspect.currentframe().f_globals["__name__"]}.trycatch] handler must accept exactly one argument to accept error message.")
+                        raise ArgumentCountError(f"[{MODULE}.trycatch] handler must accept exactly one argument to accept error message.")
                     else:
-                        raise TypeError(f"[{inspect.currentframe().f_globals["__name__"]}.trycatch] {error}.")
+                        raise TypeError(f"[{MODULE}.trycatch] {error}.")
         return wrapper
     return decorator
