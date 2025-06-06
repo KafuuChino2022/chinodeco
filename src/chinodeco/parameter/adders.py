@@ -8,6 +8,15 @@ from typing import (
     Any
 )
 
+from ..debug import (
+    DEBUG,
+    debug,
+)
+
+from ..decodsl import (
+    when
+)
+
 def addprefix(*add_args:tuple[str | list, str]) -> Callable:
     """
     Add a prefix to specified positional or keyword arguments of a function.
@@ -27,6 +36,9 @@ def addprefix(*add_args:tuple[str | list, str]) -> Callable:
         sig = inspect.signature(func)
 
         @wraps(func)
+        @when(DEBUG)(
+            debug
+        )
         def wrapper(*args, **kwargs):
             bound = sig.bind_partial(*args, **kwargs)
             bound.apply_defaults()
@@ -39,11 +51,9 @@ def addprefix(*add_args:tuple[str | list, str]) -> Callable:
                         param_name = list(sig.parameters)[key]
                         bound.arguments[param_name] = prefix + bound.arguments[param_name]
                     except IndexError:
-                        frame = inspect.currentframe()
-                        raise IndexError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Positional index {key} out of range.")
+                        raise IndexError(f"[{inspect.currentframe().f_globals["__name__"]}.addprefix] Positional index {key} out of range.")
                     except TypeError:
-                        frame = inspect.currentframe()
-                        raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Cannot add prefix to non-concatenable type at index {key}.")
+                        raise TypeError(f"[{inspect.currentframe().f_globals["__name__"]}.addprefix] Cannot add prefix to non-concatenable type at index {key}.")
 
                 # by key
                 elif isinstance(key, str):
@@ -51,14 +61,11 @@ def addprefix(*add_args:tuple[str | list, str]) -> Callable:
                         try:
                             bound.arguments[key] = prefix + bound.arguments[key]
                         except TypeError:
-                            frame = inspect.currentframe()
-                            raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Cannot add prefix to argument '{key}'.")
+                            raise TypeError(f"[{inspect.currentframe().f_globals["__name__"]}.addprefix] Cannot add prefix to argument '{key}'.")
                     else:
-                        frame = inspect.currentframe()
-                        raise KeyError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Argument '{key}' not found.")
+                        raise KeyError(f"[{inspect.currentframe().f_globals["__name__"]}.addprefix] Argument '{key}' not found.")
                 else:
-                    frame = inspect.currentframe()
-                    raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Invalid key type: {type(key)}. Must be int or str.")
+                    raise TypeError(f"[{inspect.currentframe().f_globals["__name__"]}.addprefix] Invalid key type: {type(key)}. Must be int or str.")
 
             return func(*bound.args, **bound.kwargs)
 
@@ -85,38 +92,39 @@ def addsuffix(*add_args:tuple[str | list, int]) -> Callable:
         sig = inspect.signature(func)
 
         @wraps(func)
+        @when(DEBUG)(
+            debug
+        )
         def wrapper(*args, **kwargs):
             bound = sig.bind_partial(*args, **kwargs)
             bound.apply_defaults()
             args = list(args)
-
-            for suffix, key in add_args:
-                # by index
-                if isinstance(key, int):
-                    try:
-                        param_name = list(sig.parameters)[key]
-                        bound.arguments[param_name] = bound.arguments[param_name] + suffix
-                    except IndexError:
-                        frame = inspect.currentframe()
-                        raise IndexError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Positional index {key} out of range.")
-                    except TypeError:
-                        frame = inspect.currentframe()
-                        raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Cannot add suffix to non-concatenable type at index {key}.")
-
-                # by key
-                elif isinstance(key, str):
-                    if key in bound.arguments:
+            
+            try:
+                for suffix, key in add_args:
+                    # by index
+                    if isinstance(key, int):
                         try:
-                            bound.arguments[key] = bound.arguments[key] + suffix
+                            param_name = list(sig.parameters)[key]
+                            bound.arguments[param_name] = bound.arguments[param_name] + suffix
+                        except IndexError:
+                            raise IndexError(f"[{inspect.currentframe().f_globals["__name__"]}.addsuffix] Positional index {key} out of range.")
                         except TypeError:
-                            frame = inspect.currentframe()
-                            raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Cannot add suffix to argument '{key}'.")
+                            raise TypeError(f"[{inspect.currentframe().f_globals["__name__"]}.addsuffix] Cannot add suffix to non-concatenable type at index {key}.")
+
+                    # by key
+                    elif isinstance(key, str):
+                        if key in bound.arguments:
+                            try:
+                                bound.arguments[key] = bound.arguments[key] + suffix
+                            except TypeError:
+                                raise TypeError(f"[{inspect.currentframe().f_globals["__name__"]}.addsuffix] Cannot add suffix to argument '{key}'.")
+                        else:
+                            raise KeyError(f"[{inspect.currentframe().f_globals["__name__"]}.addsuffix] Argument '{key}' not found.")
                     else:
-                        frame = inspect.currentframe()
-                        raise KeyError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Argument '{key}' not found.")
-                else:
-                    frame = inspect.currentframe()
-                    raise TypeError(f"[{frame.f_globals["__name__"]}.{frame.f_code.co_name}] Invalid key type: {type(key)}. Must be int or str.")
+                        raise TypeError(f"[{inspect.currentframe().f_globals["__name__"]}.addsuffix] Invalid key type: {type(key)}. Must be int or str.")
+            except ValueError as e:
+                raise ValueError(f"[{inspect.currentframe().f_globals["__name__"]}.addsuffix] {e}")
 
             return func(*bound.args, **bound.kwargs)
 

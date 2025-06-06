@@ -2,10 +2,14 @@
 # -*- coding:utf-8 -*-
 
 from chinodeco import *
-from chinodeco.debug import debug
+from chinodeco.debug import (
+    debug,
+    trycatch
+)
 from chinodeco.decodsl import (
     when,
     whileloop,
+    foreach, 
     CommandDispatcher
 )
 
@@ -40,19 +44,27 @@ def counter1():
     c -= 1
 
 @whileloop(lambda: c > 0).elsedo(
-    print, f"c is {c}"
+    lambda: print(f"c is {c}")
 )
 def counter2():
     global c
     print(c)
     c -= 1
 
+b = 0
+@foreach(range(10))
+def counter3():
+    global b
+    print(b)
+    b += 1
+
+@trycatch(Exception, lambda e: print(e))
 def main():
     
     hello("你好")
     print(hello.__name__)
     
-    cmd = str(input(">"))
+    cmd = str(input("please enter 'print', the args include 'message': str\n>"))
     d.run(cmd)
     print(prt.__name__)
     
@@ -61,6 +73,8 @@ def main():
     counter2()
     c = 3
     d.run(input("please enter 'count_c'\n>"))
+    
+    counter3()
 
 if __name__ == "__main__":
     main()

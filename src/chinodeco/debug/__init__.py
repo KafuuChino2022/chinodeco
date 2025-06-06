@@ -3,7 +3,8 @@
 
 from .debugger import (
     DEBUG,
-    debug
+    debug,
+    trycatch
 )
 
 from .errors import (

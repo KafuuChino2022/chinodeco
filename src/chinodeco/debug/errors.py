@@ -7,5 +7,5 @@ class UnknownCommandError(Exception):
 class UnknownParameterError(Exception):
     pass
 
-class ArgumentCountError(Exception):
+class ArgumentCountError(TypeError):
     pass

@@ -3,7 +3,8 @@
 
 from .control import (
     when,
-    whileloop
+    whileloop,
+    foreach
 )
 
 from .registry import (

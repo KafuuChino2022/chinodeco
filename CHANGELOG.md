@@ -57,3 +57,22 @@
 - 当 `whileloop` 接收非 Callable 的条件时，视为不可变条件，仅执行最多 `max_loops` 次。后续版本可能补充对“可变对象”的检测支持。
 
 > 本版本引入了函数循环控制语义与更细粒度的调试输出控制机制，增强 DSL 的行为表达力与调试友好性。
+
+## [0.0.5] - 2025-06-06
+### Added
+- 新增 `chinodeco.decodsl.foreach` 循环装饰器（定义于 `chinodeco.decodsl.control`）：
+  - 支持遍历 `iter` 参数（若非 Iterable，则退化为最大循环次数 `max_loops`）；
+  - 使用 `loop_wrapper` 为原函数在每次循环中提供新的装饰（不保留）；
+  - 函数整体将返回每次调用的返回值组成的列表；
+- 新增 `chinodeco.debug.trycatch` 装饰器（定义于 `chinodeco.debug.debugger`）：
+  - 支持传入 `exception` 或 `(BaseException, ...)` 类型的元组；
+  - `handler` 必须接收一个参数用于错误处理；
+  
+### Changed
+- `chinodeco.debug.errors.ArgumentCountError` 现继承自 `TypeError`；
+- 全局异常结构改进：统一使用模块级异常抛出逻辑，提升一致性与可维护性；
+
+### Fixed
+- 修复 `chinodeco.debug.debug` 在显式传入 `verbose` 时仍被 `_DEBUG_VERBOSE` 覆盖的 Bug；
+
+> 本版本加入了异常处理装饰器并添加了新的循环控制, 着重重写了包内的异常抛出
