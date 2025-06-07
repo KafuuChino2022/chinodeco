@@ -1,6 +1,8 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
+MODULE = "chinodeco.base"
+
 from typing import Callable
 
 def decochain(*wrappers: Callable | None):

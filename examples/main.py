@@ -8,7 +8,8 @@
 from chinodeco import (
     decochain,
     addprefix,
-    addsuffix
+    addsuffix,
+    filterargs
 )
 
 from chinodeco.debug import (
@@ -24,6 +25,13 @@ from chinodeco.decodsl import (
 )
 
 d = CommandDispatcher()
+
+def test_trycatch_handler_argument_count():
+    @trycatch(ValueError, lambda: "wrong handler")  # no parameter
+    def fail():
+        raise ValueError("fail")
+    
+    fail()
 
 @when(0)(
     addsuffix(("[_]", "msg"))
@@ -45,7 +53,7 @@ def prt(message: str):
 
 c = 3
 
-@whileloop(lambda: c > 0, loop_wrapper = d.register("count_c")).elsedo(
+@whileloop(lambda: c > 0, loop_wrapper = d.register("print count_c")).elsedo(
     print, f"in else"
 )
 def counter1():
@@ -68,8 +76,14 @@ def counter3():
     print(b)
     b += 1
 
+@filterargs(block=[1, "a"])
+def a(*args):
+    return args
+
 @trycatch(Exception, lambda e: print(e))
 def main():
+    test_trycatch_handler_argument_count()
+    print(a(1, 2, "a", "b"))
     
     hello("你好")
     print(hello.__name__)
@@ -82,7 +96,7 @@ def main():
     counter1()
     counter2()
     c = 4
-    d.run(input("please enter 'count_c'\n>"))
+    d.run(input("please enter 'print count_c'\n>"))
     
     counter3()
 

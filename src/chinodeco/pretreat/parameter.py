@@ -1,7 +1,7 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
-MODULE = "chinodeco.parameter"
+MODULE = "chinodeco.pretreat.parameter"
 
 import inspect
 from functools import wraps
@@ -48,6 +48,21 @@ def _patch_args(bound: inspect.BoundArguments, sig: inspect.Signature, updates: 
         raise ValueError(f"[{tag}] {e}")
 
 def setargs(*set_args:tuple[Any, str | int]) -> Callable:
+    """
+    Set fixed values for specific arguments or parameters before function execution.
+
+    Each entry in `set_args` is a tuple of (value, key/index), where:
+    - `value` is the new value to be injected.
+    - `key/index` is either the parameter name (str) or positional index (int) to override.
+
+    Useful for pre-binding fixed arguments to a function in a decorator chain.
+
+    Args:
+        *set_args: Tuples specifying (value, key/index) for argument override.
+
+    Returns:
+        A decorator that modifies the target function's arguments before execution.
+    """
     def decorator(func: Callable):
         sig = inspect.signature(func)
 
@@ -152,8 +167,39 @@ def addsuffix(*add_args:tuple[str | list, int | str]) -> Callable:
     return decorator
 
 def mapargs(*map_args:tuple[Callable[[Any], Any], int | str]) -> Callable:
+    """
+    Transform specific arguments by applying a function to them before execution.
+
+    Each entry in `map_args` is a tuple of (map_func, key/index), where:
+    - `map_func` is a callable that takes one argument and returns a transformed result.
+    - `key/index` is either a parameter name (str) or position (int) to apply the function to.
+
+    Example:
+        @mapargs((int, "count"))
+        def f(count): ...
+
+    Args:
+        *map_args: Tuples specifying (map_func, key/index) for argument transformation.
+
+    Returns:
+        A decorator that maps arguments prior to function execution.
+
+    Raises:
+        TypeError: If `map_func` is not callable or does not accept exactly one argument.
+    """
     def decorator(func: Callable):
         sig = inspect.signature(func)
+
+        def make_modifier(f): return lambda x: f(x)
+
+        updates = []
+        for map_func, key in map_args:
+            if not callable(map_func):
+                raise TypeError(f"[{MODULE}.mapargs] map_func must be callable.")
+            sig_map = inspect.signature(map_func)
+            if len(sig_map.parameters) != 1:
+                raise TypeError(f"[{MODULE}.mapargs] map_func must accept exactly one argument.")
+            updates.append((make_modifier(map_func), key))
 
         @wraps(func)
         @when(DEBUG)(
@@ -163,8 +209,6 @@ def mapargs(*map_args:tuple[Callable[[Any], Any], int | str]) -> Callable:
             bound = sig.bind_partial(*args, **kwargs)
             bound.apply_defaults()
             updates = []
-            
-            def make_modifier(f): return lambda x: f(x)
 
             for map_func, key in map_args:
 
@@ -182,7 +226,7 @@ def mapargs(*map_args:tuple[Callable[[Any], Any], int | str]) -> Callable:
         return wrapper
     return decorator
 
-def _matches(value, patterns):
+def _matches_value_or_type(value, patterns):
     for pattern in patterns:
         if isinstance(pattern, type):
             if isinstance(value, pattern):
@@ -192,6 +236,24 @@ def _matches(value, patterns):
     return False
 
 def filterargs(*, allow: list | None = None, block: list | None = None, allow_block: bool = False):
+    """
+    Filter function arguments by matching their values against allow/block rules.
+
+    This decorator selectively removes arguments before calling the target function,
+    based on inclusion (allow) or exclusion (block) criteria.
+
+    Args:
+        allow: A list of allowed values or predicates (callables).
+        block: A list of blocked values or predicates (callables).
+        allow_block: If True, allow both `allow` and `block` to be used together.
+                            If False, raises error if both are provided.
+
+    Returns:
+        A decorator that filters positional and keyword arguments before execution.
+
+    Raises:
+        ValueError: If both `allow` and `block` are provided while `allow_block` is False.
+    """
     if (not allow_block) and (allow is not None and block is not None):
         raise ValueError(f"[{MODULE}.filterargs] filterargs cannot accpet both 'allow' and 'block' at the same time.")
     allow = allow or []
@@ -211,13 +273,13 @@ def filterargs(*, allow: list | None = None, block: list | None = None, allow_bl
 
             new_args = []
             for param in bound.args:
-                if _matches(param, active_block) or not _matches(param, active_allow):
+                if (active_block and _matches_value_or_type(param, active_block)) or (active_allow and not _matches_value_or_type(param, active_allow)):
                     continue
                 new_args.append(param)
 
             new_kwargs = {}
             for key, value in bound.kwargs.items():
-                if _matches(value, active_block) or not _matches(value, active_allow):
+                if (active_block and _matches_value_or_type(value, active_block)) or (active_allow and not _matches_value_or_type(value, active_allow)):
                     continue
                 new_kwargs[key] = value
 

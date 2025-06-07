@@ -3,6 +3,7 @@
 
 MODULE = "chinodeco.debug.debugger"
 
+import inspect
 from typing import (
     Callable,
     Any
@@ -35,7 +36,7 @@ def debug(func: Callable | None = None, *, verbose = _DEBUG_VERBOSE):
         Callable: The wrapped function with error suppression and optional debug output.
     """
     if func is None:
-        return lambda f: debug(f, verbose)
+        return lambda f: debug(f, verbose=verbose)
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -66,6 +67,16 @@ def trycatch(exception: BaseException | tuple[BaseException], handler: Callable[
         def parse_int(text):
             return int(text)
     """
+    if not callable(handler):
+        raise TypeError(f"[{MODULE}.trycatch] handler must be callable.")
+
+    # check argument count
+    sig = inspect.signature(handler)
+    params = list(sig.parameters.values())
+    valid_params = [p for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+    if len(valid_params) != 1:
+        raise ArgumentCountError(f"[{MODULE}.trycatch] handler must accept exactly one argument, but got {len(valid_params)}.")
+
     def decorator(func: Callable):
         if not callable(func):
             raise TypeError(f"[{MODULE}.trycatch] Invalid func type: {type(func)}. Must be Callable.")
@@ -79,9 +90,6 @@ def trycatch(exception: BaseException | tuple[BaseException], handler: Callable[
                 try:
                     return handler(e)
                 except TypeError as error:
-                    if "missing" in error or "required positional" in error:
-                        raise ArgumentCountError(f"[{MODULE}.trycatch] handler must accept exactly one argument to accept error message.")
-                    else:
-                        raise TypeError(f"[{MODULE}.trycatch] {error}.")
+                    raise TypeError(f"[{MODULE}.trycatch] {error}.")
         return wrapper
     return decorator
