@@ -10,14 +10,7 @@ from typing import (
     Any
 )
 
-from ..debug.debugger import (
-    DEBUG,
-    debug,
-)
-
-from ..decodsl.control import (
-    when
-)
+from ..debug.debugger import _debug_when
 
 def _patch_args(bound: inspect.BoundArguments, sig: inspect.Signature, updates: list[tuple[Callable[[Any], Any], str | int]], *, tag: str = "") -> Callable:
 
@@ -47,6 +40,7 @@ def _patch_args(bound: inspect.BoundArguments, sig: inspect.Signature, updates: 
     except ValueError as e:
         raise ValueError(f"[{tag}] {e}")
 
+@_debug_when
 def setargs(*set_args:tuple[Any, str | int]) -> Callable:
     """
     Set fixed values for specific arguments or parameters before function execution.
@@ -67,9 +61,6 @@ def setargs(*set_args:tuple[Any, str | int]) -> Callable:
         sig = inspect.signature(func)
 
         @wraps(func)
-        @when(DEBUG)(
-            debug
-        )
         def wrapper(*args, **kwargs):
             bound = sig.bind_partial(*args, **kwargs)
             bound.apply_defaults()
@@ -87,6 +78,7 @@ def setargs(*set_args:tuple[Any, str | int]) -> Callable:
         return wrapper
     return decorator
 
+@_debug_when
 def addprefix(*add_args:tuple[str | list, str | int]) -> Callable:
     """
     Add a prefix to specified positional or keyword arguments of a function.
@@ -106,9 +98,6 @@ def addprefix(*add_args:tuple[str | list, str | int]) -> Callable:
         sig = inspect.signature(func)
 
         @wraps(func)
-        @when(DEBUG)(
-            debug
-        )
         def wrapper(*args, **kwargs):
             bound = sig.bind_partial(*args, **kwargs)
             bound.apply_defaults()
@@ -126,7 +115,7 @@ def addprefix(*add_args:tuple[str | list, str | int]) -> Callable:
         return wrapper
     return decorator
 
-
+@_debug_when
 def addsuffix(*add_args:tuple[str | list, int | str]) -> Callable:
     """
     Add a suffix to specified positional or keyword arguments of a function.
@@ -146,9 +135,6 @@ def addsuffix(*add_args:tuple[str | list, int | str]) -> Callable:
         sig = inspect.signature(func)
 
         @wraps(func)
-        @when(DEBUG)(
-            debug
-        )
         def wrapper(*args, **kwargs):
             bound = sig.bind_partial(*args, **kwargs)
             bound.apply_defaults()
@@ -166,6 +152,7 @@ def addsuffix(*add_args:tuple[str | list, int | str]) -> Callable:
         return wrapper
     return decorator
 
+@_debug_when
 def mapargs(*map_args:tuple[Callable[[Any], Any], int | str]) -> Callable:
     """
     Transform specific arguments by applying a function to them before execution.
@@ -202,9 +189,6 @@ def mapargs(*map_args:tuple[Callable[[Any], Any], int | str]) -> Callable:
             updates.append((make_modifier(map_func), key))
 
         @wraps(func)
-        @when(DEBUG)(
-            debug
-        )
         def wrapper(*args, **kwargs):
             bound = sig.bind_partial(*args, **kwargs)
             bound.apply_defaults()
@@ -235,6 +219,7 @@ def _matches_value_or_type(value, patterns):
             return True
     return False
 
+@_debug_when
 def filterargs(*, allow: list | None = None, block: list | None = None, allow_block: bool = False):
     """
     Filter function arguments by matching their values against allow/block rules.
@@ -261,9 +246,6 @@ def filterargs(*, allow: list | None = None, block: list | None = None, allow_bl
     def decorator(func: Callable):
 
         @wraps(func)
-        @when(DEBUG)(
-            debug
-        )
         def wrapper(*args, **kwargs):
             active_allow = [arguments() if callable(arguments) else arguments for arguments in allow]
             active_block = [arguments() if callable(arguments) else arguments for arguments in block]

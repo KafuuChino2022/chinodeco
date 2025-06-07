@@ -14,7 +14,7 @@ from .errors import ArgumentCountError
 DEBUG = False
 _DEBUG_VERBOSE = False
 
-def debug(func: Callable | None = None, *, verbose = _DEBUG_VERBOSE):
+def debug(func = None, *, verbose = _DEBUG_VERBOSE):
     """
     A decorator that suppresses exceptions raised by the decorated function and optionally prints debug information.
 
@@ -37,17 +37,28 @@ def debug(func: Callable | None = None, *, verbose = _DEBUG_VERBOSE):
     """
     if func is None:
         return lambda f: debug(f, verbose=verbose)
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            if verbose:
-                print(f"[{MODULE}.{getattr(func, "__qualname__", repr(func))}] {e}")
-            else:
-                print(f"{e}")
-    return wrapper
+    if inspect.isclass(func):
+        for name, member in vars(func).items():
+            if inspect.isfunction(member) or isinstance(member, (staticmethod, classmethod)):
+                setattr(func, name, debug(member, verbose=verbose))
+        return func
+    elif callable(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                if verbose:
+                    print(f"[{MODULE}.{getattr(func, '__qualname__', repr(func))}] {e}")
+                else:
+                    print(f"{e}")
+        return wrapper
+    else:
+        return func
 
+_debug_when = debug if DEBUG else lambda f: f
+
+@_debug_when
 def trycatch(exception: BaseException | tuple[BaseException], handler: Callable[[BaseException], Any]):
     """
     Decorator that wraps a function in a try-except block, invoking a handler if the specified exception occurs.

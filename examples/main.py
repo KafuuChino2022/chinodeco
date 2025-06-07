@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 
 """
-    仅包含0.0.5及以前的样例
+    仅包含0.0.5及以前的样例, 此后请查看tests样例以了解更多模块相关功效
 """
 
 from chinodeco import (
@@ -25,13 +25,6 @@ from chinodeco.decodsl import (
 )
 
 d = CommandDispatcher()
-
-def test_trycatch_handler_argument_count():
-    @trycatch(ValueError, lambda: "wrong handler")  # no parameter
-    def fail():
-        raise ValueError("fail")
-    
-    fail()
 
 @when(0)(
     addsuffix(("[_]", "msg"))
@@ -82,7 +75,6 @@ def a(*args):
 
 @trycatch(Exception, lambda e: print(e))
 def main():
-    test_trycatch_handler_argument_count()
     print(a(1, 2, "a", "b"))
     
     hello("你好")

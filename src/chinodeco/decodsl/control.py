@@ -3,18 +3,15 @@
 
 MODULE = "chinodeco.decodsl.control"
 
-import inspect
 from functools import wraps
 from typing import (
     Callable,
     Iterable
 )
 
-from ..debug.debugger import (
-    DEBUG,
-    debug,
-)
+from ..debug.debugger import _debug_when
 
+@_debug_when
 class _when_else_chain:
     def __init__(self, condition, deco):
         self.__condition = condition
@@ -48,100 +45,6 @@ class _when_else_chain:
             return self.__elsedc(func)
         else:
             return func
-
-class _whileloop_else_chain:
-    def __init__(self, predicate, max_loops, deco):
-        self.__predicate = predicate
-        self.__max_loops = max_loops
-        if callable(self.__predicate) and (not isinstance(self.__max_loops, int) or self.__max_loops < 1):
-            if DEBUG:
-                print(f"[{self.__class__.__module__}.{self.__class__.__qualname__}] max_loops must be a positive integer.")
-            else:
-                raise ValueError(f"[{self.__class__.__module__}.{self.__class__.__qualname__}] max_loops must be a positive integer.")
-        self.__break = None
-        self.__deco = deco
-        self.__elsefunc = None
-        self.__args = ()
-        self.__kwargs = {}
-
-    def _eval_condition(self):
-        return self.__predicate() if callable(self.__predicate) else bool(self.__predicate)
-    
-    def elsedo(self, elsefunc: Callable | None = None, /, *args, **kwargs):
-        """
-        Register a fallback function to be executed when the main predicate is initially False.
-
-        This method is useful for specifying behavior when the loop condition fails at the first check.
-
-        Args:
-            elsefunc: A callable function to be executed instead of the main loop.
-                If not callable, a TypeError will be raised (or printed if DEBUG mode is enabled).
-            *args: Positional arguments to be passed to the fallback function.
-            **kwargs: Keyword arguments to be passed to the fallback function.
-
-        Returns:
-            Self: Enables method chaining.
-
-        Notes:
-            - The fallback function will be called as `elsefunc(*args, **kwargs)`.
-            - If your arguments rely on runtime state (e.g., dynamic variables),
-                use a lambda or deferred function to avoid premature evaluation:
-                `elsedo(lambda: print(f"value is {v}"))`
-        """
-        if not callable(elsefunc):
-            if DEBUG:
-                print(f"[{self.__class__.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(elsefunc)}.")
-            else:
-                raise TypeError(f"[{self.__class__.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(elsefunc)}.")
-        self.__elsefunc = elsefunc
-        self.__args = args
-        self.__kwargs = kwargs
-        return self
-    
-    def ifbreak(self, predicate: Callable | None = None):
-        """
-            Register a break condition for the loop execution.
-
-        The loop will stop if this predicate returns True during any iteration.
-        This is useful for introducing dynamic break control in the loop logic.
-
-        Args:
-            predicate: A function that returns True when the loop should exit early.
-
-        Returns:
-            Self: Enables method chaining.
-
-        Notes:
-            - The predicate is evaluated on each iteration after executing the loop body.
-            - If omitted or None, no dynamic break condition is applied.
-        """
-        self.__break = predicate
-        return self
-    
-    def __call__(self, func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            if isinstance(self.__predicate, Callable):
-                condition = self.__predicate()
-            else:
-                condition = self.__predicate
-            results = []
-            count = 0
-            if condition:
-                while condition:
-                    if self.__break() if callable(self.__break) else self.__break:
-                        break
-                    results.append(self.__deco(func)(*args, **kwargs) if callable(self.__deco) else func(*args, **kwargs))
-                    count += 1
-                    if isinstance(self.__predicate, Callable):
-                        condition = self.__predicate()
-                    else:
-                        if count >= self.__max_loops:
-                            break
-            elif self.__elsefunc is not None:
-                self.__elsefunc(*self.__args, **self.__kwargs)
-            return results
-        return wrapper
 
 def when(predicate: Callable[[], bool] | bool):
     """
@@ -181,6 +84,95 @@ def when(predicate: Callable[[], bool] | bool):
         return _when_else_chain(condition, deco)
     return decorator
 
+@_debug_when
+class _whileloop_else_chain:
+    def __init__(self, predicate, max_loops, deco):
+        self.__predicate = predicate
+        self.__max_loops = max_loops
+        if callable(self.__predicate) and (not isinstance(self.__max_loops, int) or self.__max_loops < 1):
+            raise ValueError(f"[{self.__class__.__module__}.{self.__class__.__qualname__}] max_loops must be a positive integer.")
+        self.__break = None
+        self.__deco = deco
+        self.__elsefunc = None
+        self.__args = ()
+        self.__kwargs = {}
+
+    def _eval_condition(self):
+        return self.__predicate() if callable(self.__predicate) else bool(self.__predicate)
+
+    def elsedo(self, elsefunc: Callable | None = None, /, *args, **kwargs):
+        """
+        Register a fallback function to be executed when the main predicate is initially False.
+
+        This method is useful for specifying behavior when the loop condition fails at the first check.
+
+        Args:
+            elsefunc: A callable function to be executed instead of the main loop.
+                If not callable, a TypeError will be raised (or printed if DEBUG mode is enabled).
+            *args: Positional arguments to be passed to the fallback function.
+            **kwargs: Keyword arguments to be passed to the fallback function.
+
+        Returns:
+            Self: Enables method chaining.
+
+        Notes:
+            - The fallback function will be called as `elsefunc(*args, **kwargs)`.
+            - If your arguments rely on runtime state (e.g., dynamic variables),
+                use a lambda or deferred function to avoid premature evaluation:
+                `elsedo(lambda: print(f"value is {v}"))`
+        """
+        if not callable(elsefunc):
+            raise TypeError(f"[{self.__class__.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(elsefunc)}.")
+        self.__elsefunc = elsefunc
+        self.__args = args
+        self.__kwargs = kwargs
+        return self
+
+    def ifbreak(self, predicate: Callable | None = None):
+        """
+            Register a break condition for the loop execution.
+
+        The loop will stop if this predicate returns True during any iteration.
+        This is useful for introducing dynamic break control in the loop logic.
+
+        Args:
+            predicate: A function that returns True when the loop should exit early.
+
+        Returns:
+            Self: Enables method chaining.
+
+        Notes:
+            - The predicate is evaluated on each iteration after executing the loop body.
+            - If omitted or None, no dynamic break condition is applied.
+        """
+        self.__break = predicate
+        return self
+
+    def __call__(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if isinstance(self.__predicate, Callable):
+                condition = self.__predicate()
+            else:
+                condition = self.__predicate
+            results = []
+            count = 0
+            if condition:
+                while condition:
+                    if self.__break() if callable(self.__break) else self.__break:
+                        break
+                    results.append(self.__deco(func)(*args, **kwargs) if callable(self.__deco) else func(*args, **kwargs))
+                    count += 1
+                    if isinstance(self.__predicate, Callable):
+                        condition = self.__predicate()
+                    else:
+                        if count >= self.__max_loops:
+                            break
+            elif self.__elsefunc is not None:
+                self.__elsefunc(*self.__args, **self.__kwargs)
+            return results
+        return wrapper
+
 def whileloop(predicate: Callable[[], bool] | bool, *, loop_wrapper: Callable | None = None, max_loops = 1):
     """
     Decorator for executing a function repeatedly while a predicate is True.
@@ -213,22 +205,19 @@ def whileloop(predicate: Callable[[], bool] | bool, *, loop_wrapper: Callable | 
     """
     return _whileloop_else_chain(predicate, max_loops, loop_wrapper)
 
+@_debug_when
 def foreach(iter: Iterable | None = None, *, max_loops: int = 10, loop_wrapper: Callable | None = None):
     def decorator(func: Callable):
         @wraps(func)
-        @when(DEBUG)(
-            debug
-        )
         def wrapper(*args, **kwargs):
             results = []
             if (iter is not None) and isinstance(iter, Iterable):
-                for i in iter:
+                for _ in iter:
                     results.append(loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs))
             elif iter is None:
-                for i in range(max_loops):
+                for _ in range(max_loops):
                     results.append(loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs))
             else:
-                frame = inspect.currentframe()
                 raise TypeError(f"[{MODULE}.foreach] Invalid iter type: {type(iter)}. Must be Iterable.")
             return results
         return wrapper

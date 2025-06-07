@@ -114,3 +114,24 @@
 - 计划在未来版本中完全废弃 `chinodeco.parameter`, 目前仍从 `chinodeco.pretreat` 包暂时导入以保证兼容性, 请尽早迁移至新模块
 
 > 当前版本处于功能开发阶段, 尚未进入发布流程, 相关 API 稳定性与接口格式仍可能调整
+
+## [0.0.8] - 2025-06-07
+### Added
+- 新增模块 `chinodeco.pretreat.attrset`，提供一套统一的标签标记系统，包括：
+  - `@tag`, `@tagpop`：装饰器形式为函数添加/移除标签；
+  - `settags`, `deltags`：显式设置/删除标签；
+  - `gettag`, `gettags`, `alltags`：获取单个、多个或全部标签信息；
+  - `haskey`, `haskeys`：检查标签键是否存在；
+  - `hastag`, `hastags`：检查标签键是否存在且值为真。
+- `chinodeco.debug.debugger.debug` 装饰器新增对类的支持，可为类中所有方法批量添加调试包装。
+
+### Changed
+- 精简了调试模式下 `@debug` 与 `@when(DEBUG)` 的组合逻辑，避免装饰器嵌套层级对性能产生影响。
+- 调试机制仅作用于装饰阶段，不再干预函数调用阶段抛出的异常行为，提升可控性和透明性。
+
+### Enhanced
+- 内部调试机制的结构更合理，避免了循环依赖风险，便于后续模块之间交叉依赖（如 `attrset` 与 `CommandDispatcher` 的组合使用）。
+
+---
+
+> 当前版本处于功能开发阶段，预计下个版本将在 `chinodeco.decodsl.control.CommandDispatcher` 基础上引入权限机制，结合标签实现更灵活的行为控制。
