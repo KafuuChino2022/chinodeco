@@ -5,6 +5,9 @@ MODULE = "chinodeco.base"
 
 from typing import Callable
 
+from .debug.debugger import _debug_when
+
+@_debug_when
 def decochain(*wrappers: Callable | None):
     """
     Chain multiple decorators together.

@@ -8,19 +8,12 @@ import shlex
 import inspect
 from typing import Callable
 
-from ..debug.debugger import (
-    DEBUG,
-    debug,
-)
+from ..debug.debugger import _debug_when
 
 from ..debug.errors import (
     UnknownParameterError,
     UnknownCommandError,
     ArgumentCountError
-)
-
-from ..decodsl.control import (
-    when
 )
 
 class CommandNode:
@@ -50,6 +43,7 @@ class CommandDispatcher:
         """
         self.root = dispatcher.root if dispatcher is not None else CommandNode()
     
+    @_debug_when
     def register(self, path: str, *wrappers: Callable):
         """
         Register a function as a command handler.
@@ -86,9 +80,6 @@ class CommandDispatcher:
             return func
         return __wrap
 
-    @when(DEBUG)(
-        debug
-    )
     def parse_command(self, raw: str, emptiable: bool = True) -> tuple[CommandNode, list[str], list[str], dict[str, str | bool]]:
         """
         Parse a CLI-style command string into (command, args, kwargs).
@@ -153,9 +144,6 @@ class CommandDispatcher:
 
         return node, command_path, args, kwargs_dict
     
-    @when(DEBUG)(
-        debug
-    )
     def run(self, command: str, cmd_emptiable: bool = True):
         """
         Execute a registered command with parsed arguments and keyword arguments.
