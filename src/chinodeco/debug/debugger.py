@@ -52,6 +52,11 @@ def debug(func = None, *, verbose = _DEBUG_VERBOSE):
                     print(f"[{MODULE}.{getattr(func, '__qualname__', repr(func))}] {e}")
                 else:
                     print(f"{e}")
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                return await wrapper(*args, **kwargs)
+            return async_wrapper
         return wrapper
     else:
         return func
@@ -90,9 +95,7 @@ def trycatch(exception: BaseException | tuple[BaseException], handler: Callable[
 
     def decorator(func: Callable):
         if not callable(func):
-            raise TypeError(f"[{MODULE}.trycatch] Invalid func type: {type(func)}. Must be Callable.")
-        if not callable(func):
-            raise TypeError(f"[{MODULE}.trycatch] Invalid handler type: {type(handler)}. Must be Callable.")
+            raise TypeError(f"[{MODULE}.trycatch] Invalid func type: {type(func)}. Must be Callable or Coroutinefunction.")
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
@@ -102,5 +105,10 @@ def trycatch(exception: BaseException | tuple[BaseException], handler: Callable[
                     return handler(e)
                 except TypeError as error:
                     raise TypeError(f"[{MODULE}.trycatch] {error}.")
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                return await wrapper(*args, **kwargs)
+            return async_wrapper
         return wrapper
     return decorator

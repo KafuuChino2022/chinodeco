@@ -2,10 +2,6 @@
 __pycache__/
 **/__pycache__/
 
-# 忽略所有 .vscode 配置目录（例如 VSCode 工程配置）
-.vscode/
-**/.vscode/
-
 # 忽略 Python 编译文件
 *.py[cod]
 *.pyo

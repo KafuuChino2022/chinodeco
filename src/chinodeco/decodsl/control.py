@@ -3,10 +3,11 @@
 
 MODULE = "chinodeco.decodsl.control"
 
+import inspect
 from functools import wraps
 from typing import (
     Callable,
-    Iterable
+    Iterable,
 )
 
 from ..debug.debugger import _debug_when
@@ -76,7 +77,7 @@ def when(predicate: Callable[[], bool] | bool):
         ```
     """
     def decorator(deco: Callable | None):
-        if isinstance(predicate, Callable):
+        if callable(predicate):
             condition = predicate()
         else:
             condition = predicate
@@ -148,30 +149,57 @@ class _whileloop_else_chain:
         self.__break = predicate
         return self
 
-    def __call__(self, func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            if isinstance(self.__predicate, Callable):
-                condition = self.__predicate()
-            else:
-                condition = self.__predicate
-            results = []
-            count = 0
-            if condition:
-                while condition:
-                    if self.__break() if callable(self.__break) else self.__break:
-                        break
-                    results.append(self.__deco(func)(*args, **kwargs) if callable(self.__deco) else func(*args, **kwargs))
-                    count += 1
-                    if isinstance(self.__predicate, Callable):
-                        condition = self.__predicate()
-                    else:
-                        if count >= self.__max_loops:
+    def __call__(self, func: Callable):
+        if not callable(func):
+            raise TypeError(f"[{self.__class__.__module__}.{self.elsedo.__qualname__}] expected callable, but got {type(func)}.")
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                if callable(self.__predicate):
+                    condition = self.__predicate()
+                else:
+                    condition = self.__predicate
+                results = []
+                count = 0
+                if condition:
+                    while condition:
+                        if self.__break() if callable(self.__break) else self.__break:
                             break
-            elif self.__elsefunc is not None:
-                self.__elsefunc(*self.__args, **self.__kwargs)
-            return results
-        return wrapper
+                        results.append(await (self.__deco(func)(*args, **kwargs) if callable(self.__deco) else func(*args, **kwargs)))
+                        count += 1
+                        if callable(self.__predicate):
+                            condition = self.__predicate()
+                        else:
+                            if count >= self.__max_loops:
+                                break
+                elif self.__elsefunc is not None:
+                    self.__elsefunc(*self.__args, **self.__kwargs)
+                return results
+            return async_wrapper
+        else:
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                if callable(self.__predicate):
+                    condition = self.__predicate()
+                else:
+                    condition = self.__predicate
+                results = []
+                count = 0
+                if condition:
+                    while condition:
+                        if self.__break() if callable(self.__break) else self.__break:
+                            break
+                        results.append(self.__deco(func)(*args, **kwargs) if callable(self.__deco) else func(*args, **kwargs))
+                        count += 1
+                        if callable(self.__predicate):
+                            condition = self.__predicate()
+                        else:
+                            if count >= self.__max_loops:
+                                break
+                elif self.__elsefunc is not None:
+                    self.__elsefunc(*self.__args, **self.__kwargs)
+                return results
+            return wrapper
 
 def whileloop(predicate: Callable[[], bool] | bool, *, loop_wrapper: Callable | None = None, max_loops = 1):
     """
@@ -208,17 +236,35 @@ def whileloop(predicate: Callable[[], bool] | bool, *, loop_wrapper: Callable | 
 @_debug_when
 def foreach(iter: Iterable | None = None, *, max_loops: int = 10, loop_wrapper: Callable | None = None):
     def decorator(func: Callable):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            results = []
-            if (iter is not None) and isinstance(iter, Iterable):
-                for _ in iter:
-                    results.append(loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs))
-            elif iter is None:
-                for _ in range(max_loops):
-                    results.append(loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs))
-            else:
-                raise TypeError(f"[{MODULE}.foreach] Invalid iter type: {type(iter)}. Must be Iterable.")
-            return results
-        return wrapper
+        
+        
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                results = []
+                if (iter is not None) and isinstance(iter, Iterable):
+                    for _ in iter:
+                        results.append(await (loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs)))
+                elif iter is None:
+                    for _ in range(max_loops):
+                        results.append(await (loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs)))
+                else:
+                    raise TypeError(f"[{MODULE}.foreach] Invalid iter type: {type(iter)}. Must be Iterable.")
+                return results
+            return async_wrapper
+        else:
+            @wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                results = []
+                if (iter is not None) and isinstance(iter, Iterable):
+                    for _ in iter:
+                        results.append(loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs))
+                elif iter is None:
+                    for _ in range(max_loops):
+                        results.append(loop_wrapper(func)(*args, **kwargs) if callable(loop_wrapper) else func(*args, **kwargs))
+                else:
+                    raise TypeError(f"[{MODULE}.foreach] Invalid iter type: {type(iter)}. Must be Iterable.")
+                return results
+            return sync_wrapper
+
     return decorator

@@ -24,6 +24,14 @@ from chinodeco.decodsl import (
     CommandDispatcher
 )
 
+@debug
+def a():
+    return 1
+
+def a():
+    return 1
+a = debug(a)
+
 d = CommandDispatcher()
 
 @when(0)(

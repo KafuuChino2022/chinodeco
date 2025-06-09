@@ -132,6 +132,22 @@
 ### Enhanced
 - 内部调试机制的结构更合理，避免了循环依赖风险，便于后续模块之间交叉依赖（如 `attrset` 与 `CommandDispatcher` 的组合使用）。
 
+> 当前版本处于功能开发阶段，预计下个版本将在 `chinodeco.decodsl.control.CommandDispatcher` 基础上引入权限机制，结合标签实现更灵活的行为控制。
+
+# [0.0.9] - 2025-06-09
+### Added
+- 为包内所有主要模块新增异步函数兼容支持。
+- 异步装饰器链和控制流装饰器支持异步函数的正确执行和异常处理。
+- 命令分发器增强，支持异步命令的注册与调用, `CommandDispatcher` 新增 `asyncrun` 方法。
+
+### Changed
+- 优化异步与同步函数混合调用的执行逻辑，减少运行时警告。
+- 调整部分装饰器实现，确保使用 `@wraps` 保留函数元信息。
+
+### Fixed
+- 修复异步函数调用时协程未 awaited 导致的运行时警告。
+- 解决异步场景下部分装饰器逻辑不兼容问题。
+
 ---
 
-> 当前版本处于功能开发阶段，预计下个版本将在 `chinodeco.decodsl.control.CommandDispatcher` 基础上引入权限机制，结合标签实现更灵活的行为控制。
+> 当前版本处于功能开发阶段，此次更新主要为未来异步特性扩展打下坚实基础，提升包的灵活性和稳定性。`chinodeco.decodsl.control.CommandDispatcher` 的权限机制仍需推迟, `chinodeco.parameter` 的废弃将被推迟到 0.1 版本发布

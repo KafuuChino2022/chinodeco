@@ -188,3 +188,48 @@ class CommandDispatcher:
                 raise UnknownParameterError(f"[{self.__class__.__module__}.{self.run.__qualname__}] {msg}")
 
         return func(*args, **kwargs)
+    
+    async def asyncrun(self, command: str, cmd_emptiable: bool = True):
+        """
+        Execute a registered command with parsed arguments and keyword arguments.
+
+        This method parses the raw command string, extracts the command name,
+        positional arguments, and keyword arguments, then invokes the corresponding
+        registered coroutine function if found.
+
+        Args:
+            command: A raw command-line style string to be executed.
+                Example: `"greet hello --name Alice -v"`
+
+        Returns:
+            Any: The return value of the executed command coroutine function.
+
+        Raises:
+            UnknownCommandError: If the command name is not registered.
+            ArgumentCountError: If required positional arguments are missing.
+            UnknownParameterError: If unexpected keyword arguments are passed.
+
+        Notes:
+            - Command functions must be registered via `register(command_name)(func)` before execution.
+            - Arguments are parsed using shell-like syntax (via `shlex.split()`).
+            - Supports short flags (e.g., `-abc`), long options (`--key value`), and quoted strings.
+        """
+        node, path, args, kwargs = self.parse_command(command, cmd_emptiable)
+        if not path and cmd_emptiable:
+            return None
+        if not node.handler:
+            raise UnknownCommandError(f"[{self.__class__.__module__}.{self.run.__qualname__}] command '{".".join(path)}' is not exist.")
+
+        func = node.handler
+        sig = inspect.signature(func)
+
+        try:
+            sig.bind(*args, **kwargs)
+        except TypeError as e:
+            msg = str(e)
+            if "missing" in msg or "required positional" in msg:
+                raise ArgumentCountError(f"[{self.__class__.__module__}.{self.run.__qualname__}] {msg}")
+            elif "unexpected keyword" in msg:
+                raise UnknownParameterError(f"[{self.__class__.__module__}.{self.run.__qualname__}] {msg}")
+
+        return (await func(*args, **kwargs)) if inspect.iscoroutinefunction(func) else func(*args, **kwargs)

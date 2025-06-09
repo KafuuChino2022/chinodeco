@@ -11,6 +11,16 @@
       },
       "console": "integratedTerminal"
     },
+    {
+      "name": "Run Example1",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/examples/example.py",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "console": "integratedTerminal"
+    },
   ]
 }
 

@@ -112,6 +112,12 @@ def addprefix(*add_args:tuple[str | list, str | int]) -> Callable:
 
             return func(*bound.args, **bound.kwargs)
 
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                return await wrapper(*args, **kwargs)
+            return async_wrapper
+
         return wrapper
     return decorator
 
@@ -148,6 +154,12 @@ def addsuffix(*add_args:tuple[str | list, int | str]) -> Callable:
             _patch_args(bound, sig, updates, tag = f"{MODULE}.addsuffix")
 
             return func(*bound.args, **bound.kwargs)
+
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                return await wrapper(*args, **kwargs)
+            return async_wrapper
 
         return wrapper
     return decorator
@@ -206,6 +218,12 @@ def mapargs(*map_args:tuple[Callable[[Any], Any], int | str]) -> Callable:
             _patch_args(bound, sig, updates, tag = f"{MODULE}.mapargs")
 
             return func(*bound.args, **bound.kwargs)
+
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                return await wrapper(*args, **kwargs)
+            return async_wrapper
 
         return wrapper
     return decorator
@@ -266,5 +284,12 @@ def filterargs(*, allow: list | None = None, block: list | None = None, allow_bl
                 new_kwargs[key] = value
 
             return func(*new_args, **new_kwargs)
+
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                return await wrapper(*args, **kwargs)
+            return async_wrapper
+
         return wrapper
     return decorator
