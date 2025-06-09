@@ -6,14 +6,18 @@ MODULE = "chinodeco.decodsl.registry"
 import warnings
 import shlex
 import inspect
-from typing import Callable
+from typing import (
+    Callable,
+    Any
+)
 
 from ..debug.debugger import _debug_when
 
 from ..debug.errors import (
     UnknownParameterError,
     UnknownCommandError,
-    ArgumentCountError
+    ArgumentCountError,
+    AuthorizationError
 )
 
 class CommandNode:
@@ -72,7 +76,7 @@ class CommandDispatcher:
         def __wrap(func):
             wrapped = func
             if wrappers is not None:
-                for wrapper in wrappers:
+                for wrapper in reversed(wrappers):
                     wrapped = wrapper(wrapped)
             if node.handler is not None:
                 warnings.warn(f"[{self.__class__.__module__}.{self.register.__qualname__}] command '{".".join(path.split())}' is already registered; existing command will be overwritten.", RuntimeWarning)
@@ -143,8 +147,8 @@ class CommandDispatcher:
         kwargs_dict = {k: v for k, v in kwargs}
 
         return node, command_path, args, kwargs_dict
-    
-    def run(self, command: str, cmd_emptiable: bool = True):
+
+    def run(self, command: str, *options: tuple[str, Any] | str, cmd_emptiable: bool = True):
         """
         Execute a registered command with parsed arguments and keyword arguments.
 
@@ -187,9 +191,22 @@ class CommandDispatcher:
             elif "unexpected keyword" in msg:
                 raise UnknownParameterError(f"[{self.__class__.__module__}.{self.run.__qualname__}] {msg}")
 
+        if options:
+            tags = getattr(func, "__chino_tags", {})
+            for option in options:
+                if isinstance(option, tuple) and len(option) == 2 and isinstance(option[0], str):
+                    if tags.get(option[0], False) == option[1]:
+                        return func(*args, **kwargs)
+                elif isinstance(option, str):
+                    if tags.get(option, False):
+                        return func(*args, **kwargs)
+                else:
+                    raise TypeError(f"[{self.__class__.__module__}.{self.run.__qualname__}] each option must be a str or tuple[str, Any], but got {type(option).__name__}: {option!r}")
+            raise AuthorizationError(f"[{self.__class__.__module__}.{self.run.__qualname__}]-'{func.__qualname__}' you are not allowed to use command '{" ".join(path)}' please check your authority.")
         return func(*args, **kwargs)
     
-    async def asyncrun(self, command: str, cmd_emptiable: bool = True):
+    
+    async def asyncrun(self, command: str, *options: tuple[str, Any] | str, cmd_emptiable: bool = True):
         """
         Execute a registered command with parsed arguments and keyword arguments.
 
@@ -231,5 +248,18 @@ class CommandDispatcher:
                 raise ArgumentCountError(f"[{self.__class__.__module__}.{self.run.__qualname__}] {msg}")
             elif "unexpected keyword" in msg:
                 raise UnknownParameterError(f"[{self.__class__.__module__}.{self.run.__qualname__}] {msg}")
+        
+        if options:
+            tags = getattr(func, "__chino_tags", {})
+            for option in options:
+                if isinstance(option, tuple) and len(option) == 2 and isinstance(option[0], str):
+                    if tags.get(option[0], False) == option[1]:
+                        return func(*args, **kwargs)
+                elif isinstance(option, str):
+                    if tags.get(option, False):
+                        return func(*args, **kwargs)
+                else:
+                    raise TypeError(f"[{self.__class__.__module__}.{self.run.__qualname__}] each option must be a str or tuple[str, Any], but got {type(option).__name__}: {option!r}")
+            raise AuthorizationError(f"[{self.__class__.__module__}.{self.run.__qualname__}]-'{func.__qualname__}' you are not allowed to use command '{" ".join(path)}' please check your authority.")
 
         return (await func(*args, **kwargs)) if inspect.iscoroutinefunction(func) else func(*args, **kwargs)

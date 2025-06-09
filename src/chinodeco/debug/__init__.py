@@ -1,7 +1,7 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
-__all__ = ["debug", "trycatch", "DEBUG", "UnknownCommandError", "UnknownParameterError", "ArgumentCountError"]
+__all__ = ["debug", "trycatch", "DEBUG", "UnknownCommandError", "UnknownParameterError", "ArgumentCountError", "AuthorizationError"]
 
 from .debugger import (
     DEBUG,
@@ -12,5 +12,6 @@ from .debugger import (
 from .errors import (
     UnknownCommandError,
     UnknownParameterError,
-    ArgumentCountError
+    ArgumentCountError,
+    AuthorizationError
 )

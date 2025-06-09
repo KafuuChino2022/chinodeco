@@ -1,7 +1,7 @@
 # !/usr/bin/env Python3
 # -*- coding:utf-8 -*-
 
-__version__ = "0.0.9"
+__version__ = "0.0.10"
 __all__ = ["decochain", "setargs", "addprefix", "addsuffix", "mapargs", "filterargs", "tag", "tagpop", "settags", "haskey", "haskeys", "gettag", "gettags", "deltags", "alltags", "hastag", "hastags"]
 
 from .base import decochain

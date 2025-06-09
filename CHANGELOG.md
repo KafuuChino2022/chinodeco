@@ -151,3 +151,18 @@
 ---
 
 > 当前版本处于功能开发阶段，此次更新主要为未来异步特性扩展打下坚实基础，提升包的灵活性和稳定性。`chinodeco.decodsl.control.CommandDispatcher` 的权限机制仍需推迟, `chinodeco.parameter` 的废弃将被推迟到 0.1 版本发布
+
+## [0.0.10] - 2025-06-09
+### Added
+- `CommandDispatcher` 现支持命令权限控制。
+  - 每个命令节点可设置 `options`。
+  - 权限既可以是字符串列表，也可以是键值对, 配合 `chinodeco.pretreat.tagging.tag` 设置权限
+  - 调用时会自动验证权限，不满足条件将抛出 `AuthorizationError`。
+- 新增异常类 `AuthorizationError`，用于标识权限拒绝场景。
+- 异常类定义在 `chinodeco.debug.errors.` 模块中。
+
+### Design Note
+- 权限机制设计为可插拔、可扩展，支持从简单的权限名比对到键值对检测；
+- 权限拒绝错误不影响命令注册流程，仅在执行阶段触发。
+
+> 当前版本处于功能开发阶段, 尚未进入发布流程, 相关 API 稳定性与接口格式仍可能调整

@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import pytest
-from chinodeco.pretreat.attrset import (
+from chinodeco.pretreat.tagging import (
     tag, tagpop, settags,
     haskey, haskeys,
     hastag, hastags,

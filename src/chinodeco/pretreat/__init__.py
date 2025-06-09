@@ -11,7 +11,7 @@ from .parameter import (
     filterargs
 )
 
-from .attrset import (
+from .tagging import (
     tag, 
     tagpop, 
     settags, 

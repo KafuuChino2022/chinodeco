@@ -11,3 +11,6 @@ class UnknownParameterError(Exception):
 
 class ArgumentCountError(TypeError):
     pass
+
+class AuthorizationError(PermissionError):
+    pass
