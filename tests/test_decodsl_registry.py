@@ -89,3 +89,42 @@ def test_overwrite_warning(recwarn):
 
     warning = recwarn.pop(RuntimeWarning) if recwarn else recwarn.pop()
     assert "is already registered" in str(warning.message)
+
+def test_multiple_values_for_keyword():
+    dispatcher = CommandDispatcher()
+
+    @dispatcher.register("addtags")
+    def addtags(name, tags=None):
+        return (name, tags)
+
+    result = dispatcher.run('addtags user1 --tags tag1 tag2 tag3')
+    assert result == ("user1", ["tag1", "tag2", "tag3"])
+
+def test_command_continues_if_token_not_quoted():
+    dispatcher = CommandDispatcher()
+
+    @dispatcher.register("cmd1 cmd2 cmd3")
+    def subcommand():
+        return "matched cmd3"
+
+    @dispatcher.register("cmd1 cmd2")
+    def handler(arg):
+        return f"received: {arg}"
+
+    result = dispatcher.run("cmd1 cmd2 cmd3")
+    assert result == "matched cmd3"
+
+def test_command_terminated_by_quoted_token_even_if_subcommand_exists():
+    dispatcher = CommandDispatcher()
+
+    @dispatcher.register("cmd1 cmd2 cmd3")
+    def subcommand():
+        return "should not be matched"
+
+    @dispatcher.register("cmd1 cmd2")
+    def handler(arg):
+        return f"received: {arg}"
+
+    result = dispatcher.run('cmd1 cmd2 "cmd3"')
+
+    assert result == "received: cmd3"

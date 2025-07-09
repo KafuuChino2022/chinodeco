@@ -84,6 +84,12 @@ class CommandDispatcher:
             return func
         return __wrap
 
+    @staticmethod
+    def _clean_token(token: str):
+        if (token.startswith('"') and token.endswith('"')) or (token.startswith("'") and token.endswith("'")) and len(token > 1):
+            return token[1: -1]
+        return token
+
     def parse_command(self, raw: str, emptiable: bool = True) -> tuple[CommandNode, list[str], list[str], dict[str, str | bool]]:
         """
         Parse a CLI-style command string into (command, args, kwargs).
@@ -96,7 +102,7 @@ class CommandDispatcher:
         - quoted strings like "a b c"
         - command1 command2 -- arg1 arg2 ("--" can be used to stop identify commands, but args)
         """
-        tokens = shlex.split(raw)
+        tokens = shlex.split(raw, posix = False)
         if not tokens and emptiable:
             return (self.root, [], [], {})
 
@@ -105,11 +111,14 @@ class CommandDispatcher:
 
         node = self.root
         if len(tokens) == 1 and not tokens[0] in node.children:
-            return (self.root, tokens[0], [], {})
+            return (self.root, [tokens[0]], [], {})
         command_path = []
         args = []
         kwargs = []
         i = 0
+        
+        if tokens[0] not in node.children:
+            return (self.root, [tokens[0]], [], {})
 
         while i < len(tokens):
             token = tokens[i]
@@ -119,7 +128,7 @@ class CommandDispatcher:
                 i += 1
                 break
 
-            if token.startswith("-") or token not in node.children:
+            if token.startswith("-") or (token not in node.children) or (token.startswith("'") and token.endswith("'")) or (token.startswith('"') and token.endswith('"')):
                 break
 
             node = node.children[token]
@@ -131,16 +140,19 @@ class CommandDispatcher:
             # param treat
             if token.startswith("--"):
                 key = token[2:]
-                value = ""
+                values = ""
                 if i + 1 < len(tokens) and not tokens[i + 1].startswith("-"):
-                    value = tokens[i + 1]
-                    i += 1
-                kwargs.append((key, value))
+                    values = []
+                    while i + 1 < len(tokens) and not tokens[i + 1].startswith("-"):
+                        values.append(self._clean_token(tokens[i + 1]))
+                        i += 1
+                    values = values if len(values) > 1 else values[0]
+                kwargs.append((key, values))
             elif token.startswith("-") and len(token) > 1:
                 for char in token[1:]:
                     kwargs.append((char, True))
             else:
-                args.append(token)
+                args.append(self._clean_token(token))
 
             i += 1
 

@@ -8,7 +8,7 @@ testpaths = ["tests"]
 
 [project]
 name = "chinodeco"
-version = "0.0.10"
+version = "0.0.11"
 authors = [
     { name="KafuuChino", email="KafuuChino2022@users.noreply.github.com" },
 ]
